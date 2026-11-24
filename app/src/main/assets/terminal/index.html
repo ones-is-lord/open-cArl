@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<link rel="stylesheet" href="vendor/xterm.css">
+<style>
+  html, body { margin:0; padding:0; height:100%; background:#0b0f14; overflow:hidden; }
+  #term { position:absolute; inset:0; padding:4px 6px; }
+  .xterm-viewport::-webkit-scrollbar { width:6px; }
+  .xterm-viewport::-webkit-scrollbar-thumb { background:#2a3644; border-radius:3px; }
+  .xterm .xterm-screen { touch-action: pan-y; }
+</style>
+</head>
+<body>
+<div id="term"></div>
+<script src="vendor/xterm.js"></script>
+<script src="vendor/xterm-addon-fit.js"></script>
+<script src="vendor/xterm-addon-web-links.js"></script>
+<script>
+(function () {
+  "use strict";
+  var params = new URLSearchParams(location.search);
+  var fontSize = parseInt(params.get("fontSize") || "14", 10);
+
+  var term = new Terminal({
+    fontFamily: '"JetBrains Mono","Fira Code","Roboto Mono","DejaVu Sans Mono",monospace',
+    fontSize: fontSize,
+    lineHeight: 1.15,
+    letterSpacing: 0,
+    cursorBlink: true,
+    cursorStyle: "bar",
+    allowProposedApi: true,
+    scrollback: 10000,
+    convertEol: false,
+    theme: {
+      background: "#0b0f14", foreground: "#d7e3ee", cursor: "#35e08a",
+      cursorAccent: "#0b0f14", selectionBackground: "#264f3c",
+      black: "#1a2430", red: "#ff6b6b", green: "#35e08a", yellow: "#f2c14e",
+      blue: "#7dd3fc", magenta: "#c792ea", cyan: "#5eead4", white: "#d7e3ee",
+      brightBlack: "#5a6b7d", brightRed: "#ff8f8f", brightGreen: "#6ef2ae",
+      brightYellow: "#ffd97a", brightBlue: "#a5e4ff", brightMagenta: "#e0b0ff",
+      brightCyan: "#8ff5e4", brightWhite: "#ffffff"
+    }
+  });
+
+  var fitAddon = new FitAddon.FitAddon();
+  term.loadAddon(fitAddon);
+  if (window.WebLinksAddon) {
+    term.loadAddon(new WebLinksAddon.WebLinksAddon(function (event, uri) {
+      if (window.openCarl && openCarl.openUrl) openCarl.openUrl(uri);
+    }));
+  }
+
+  term.open(document.getElementById("term"));
+
+  // Android soft keyboards work best with these off.
+  var ta = term.textarea;
+  if (ta) {
+    ta.setAttribute("autocorrect", "off");
+    ta.setAttribute("autocapitalize", "none");
+    ta.setAttribute("autocomplete", "off");
+    ta.setAttribute("spellcheck", "false");
+    ta.setAttribute("inputmode", "text");
+  }
+
+  function sendResize() {
+    if (window.openCarl && openCarl.onResize) openCarl.onResize(term.cols, term.rows);
+  }
+
+  function refit() {
+    try { fitAddon.fit(); } catch (e) { /* layout not ready */ }
+    sendResize();
+  }
+
+  term.onData(function (data) {
+    if (window.openCarl && openCarl.onData) openCarl.onData(data);
+  });
+  term.onBinary(function (data) {
+    if (window.openCarl && openCarl.onBinary) openCarl.onBinary(data);
+  });
+  term.onResize(function () { sendResize(); });
+  window.addEventListener("resize", refit);
+  window.addEventListener("orientationchange", function () { setTimeout(refit, 250); });
+
+  window.lbWrite = function (text) { term.write(text); };
+  window.lbClear = function () { term.clear(); };
+  window.lbReset = function () { term.reset(); };
+  window.lbFit = refit;
+  window.lbFocus = function () { term.focus(); };
+  window.lbBlur = function () { term.blur(); };
+  window.lbFontSize = function (size) {
+    term.options.fontSize = size;
+    refit();
+  };
+  window.lbScrollToBottom = function () { term.scrollToBottom(); };
+  window.lbHasSelection = function () { return term.hasSelection(); };
+  window.lbGetSelection = function () { return term.getSelection(); };
+  window.lbSetTheme = function (opts) {
+    if (!opts) return;
+    if (opts.fontFamily) { term.options.fontFamily = opts.fontFamily; }
+    if (opts.fontSize) { term.options.fontSize = opts.fontSize; }
+    var theme = Object.assign({}, term.options.theme || {});
+    if (opts.background) theme.background = opts.background;
+    if (opts.foreground) theme.foreground = opts.foreground;
+    if (opts.cursor) theme.cursor = opts.cursor;
+    if (opts.cursorAccent) theme.cursorAccent = opts.cursorAccent;
+    if (opts.selection) theme.selectionBackground = opts.selection;
+    term.options.theme = theme;
+    if (opts.background) { document.body.style.background = opts.background; }
+    refit();
+  };
+
+  requestAnimationFrame(function () {
+    refit();
+    if (window.openCarl && openCarl.onReady) openCarl.onReady(term.cols, term.rows);
+  });
+})();
+</script>
+</body>
+</html>
