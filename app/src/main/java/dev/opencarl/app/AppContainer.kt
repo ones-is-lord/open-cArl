@@ -51,8 +51,19 @@ class AppContainer(context: Context) {
         wrapCommand = { command -> runtime.wrapCommand(settings.settings.value.runtime)(command) },
     )
 
-    private val _terminalOutput = MutableSharedFlow<String>(extraBufferCapacity = 8192)
-    val terminalOutput: SharedFlow<String> = _terminalOutput.asSharedFlow()
+    val emulator = dev.opencarl.terminal.TerminalEmulator(80, 24)
+
+    val audit = dev.opencarl.privilege.AuditLog { File(appContext.filesDir, "audit/audit.jsonl") }
+    val privilege = dev.opencarl.privilege.PrivilegeManager(appContext, audit)
+    val profiler = dev.opencarl.device.DeviceProfiler(appContext)
+    val storage = dev.opencarl.system.StorageTriage(appContext)
+    val apps = dev.opencarl.system.AppManager(appContext, privilege)
+    val rootTools = dev.opencarl.system.RootTools(privilege)
+    val scriptRunner = dev.opencarl.scripts.ScriptRunner(privilege)
+    val research = dev.opencarl.research.ResearchEngine(http) { settings.secret("tavily") }
+    val datasets = dev.opencarl.finetune.DatasetExporter { File(appContext.filesDir, "workspace") }
+    val models = dev.opencarl.local.ModelDownloader({ File(appContext.filesDir, "models") }, http)
+    val updates = dev.opencarl.update.UpdateManager(appContext, privilege, skills, http)
 
     private val _sessionExit = MutableSharedFlow<Int>(extraBufferCapacity = 4)
     val sessionExit: SharedFlow<Int> = _sessionExit.asSharedFlow()
@@ -82,7 +93,7 @@ class AppContainer(context: Context) {
         val launch = runtime.shellLaunch(runtimeSettings)
         val session = PtySession(
             launch = launch,
-            onOutput = { text -> _terminalOutput.tryEmit(text) },
+            onOutput = { text -> emulator.feed(text) },
             onExit = { code -> _sessionExit.tryEmit(code) },
         )
         val started = session.start()
@@ -130,6 +141,17 @@ class AppContainer(context: Context) {
     fun buildRegistry(): ToolRegistry {
         val registry = ToolRegistry()
         BuiltinTools(runner, workspace, skills, memory, http).install(registry)
+        dev.opencarl.ai.SystemTools(
+            profiler = profiler,
+            privilege = privilege,
+            storage = storage,
+            apps = apps,
+            root = rootTools,
+            scripts = scriptRunner,
+            research = research,
+            datasets = datasets,
+            emulator = emulator,
+        ).install(registry)
         mcp.registerTools(registry)
         return registry
     }

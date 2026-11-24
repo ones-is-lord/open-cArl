@@ -63,6 +63,14 @@ data class AppSettings(
     val memoryEnabled: Boolean = true,
     val openHandsUrl: String = "http://127.0.0.1:3000",
     val systemPromptExtra: String = "",
+    val personaId: String = "engineer",
+    val dgafEnabled: Boolean = false,
+    val dgafAcceptedAt: Long = 0L,
+    val toolPolicies: Map<String, String> = emptyMap(),
+    val autoUpdateOnLaunch: Boolean = false,
+    val backgroundServiceEnabled: Boolean = false,
+    val localModelId: String = "",
+    val localServerPort: Int = 8080,
 ) {
     val activeProvider: ProviderConfig
         get() = providers.firstOrNull { it.id == activeProviderId } ?: providers.first()

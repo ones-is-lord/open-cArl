@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">open cArl</string>
+    <string name="accessibility_label">open cArl device control</string>
+    <string name="accessibility_description">Lets the assistant read the screen and tap, type or swipe in other apps when you ask it to. Nothing is read unless you ask.</string>
+    <string name="channel_agent">Background agent</string>
+    <string name="channel_agent_description">Keeps open cArl running while the screen is off.</string>
 </resources>

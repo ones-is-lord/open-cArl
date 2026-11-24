@@ -94,7 +94,14 @@ class OpenCarlViewModel(application: Application) : AndroidViewModel(application
     }
 
     private suspend fun requestApproval(call: ToolCall, description: String): Boolean {
-        val policy = container.settings.settings.value.approvalPolicy
+        val settings = container.settings.settings.value
+        when (settings.toolPolicies[call.name]?.lowercase()) {
+            "allow" -> return true
+            "deny" -> return false
+        }
+        // D.G.A.F. removes the gate entirely; it is only reachable through two explicit consents.
+        if (settings.dgafEnabled && settings.dgafAcceptedAt > 0L) return true
+        val policy = settings.approvalPolicy
         if (policy == ApprovalPolicy.AUTO) return true
         if (policy == ApprovalPolicy.SMART && !isRisky(call)) return true
         val deferred = CompletableDeferred<Boolean>()
