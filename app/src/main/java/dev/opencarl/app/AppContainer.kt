@@ -78,6 +78,8 @@ class AppContainer(context: Context) {
         workspaceRoot = { workspace.root() },
     )
     val speaker = dev.opencarl.voice.Speaker(appContext)
+    val triggers = dev.opencarl.schedule.TriggerStore { File(appContext.filesDir, "schedule/triggers.json") }
+    val knowledge = dev.opencarl.memory.KnowledgeBase(memory) { listOf(workspace.root(), appContext.filesDir) }
 
     init {
         plans.load()
@@ -170,7 +172,7 @@ class AppContainer(context: Context) {
         mcp.registerTools(registry)
     }
 
-    fun buildRegistry(): ToolRegistry {
+    fun buildRegistry(approver: (suspend (ToolCall, String) -> Boolean)? = null): ToolRegistry {
         val registry = ToolRegistry()
         BuiltinTools(runner, workspace, skills, memory, http).install(registry)
         dev.opencarl.ai.SystemTools(
@@ -204,39 +206,70 @@ class AppContainer(context: Context) {
                 current.personaId to current.customPersonas
             },
             setPersona = { id -> settings.update { it.copy(personaId = id) } },
+            knowledge = knowledge,
+            triggers = triggers,
         ).install(registry)
+        if (approver != null) {
+            dev.opencarl.ai.Delegator(
+                approver = approver,
+                buildSubAgent = { subApprover, steps -> buildSubAgent(subApprover, steps) },
+            ).install(registry)
+        }
         mcp.registerTools(registry)
         return registry
+    }
+
+    /** A sub-agent gets the same tools minus spawn, a tighter budget and a report-only brief. */
+    private fun buildSubAgent(approver: suspend (ToolCall, String) -> Boolean, steps: Int): Agent {
+        val provider = settings.settings.value.activeProvider
+        val client = LlmFactory.create(http, provider, settings.apiKey(provider.id))
+        return Agent(
+            client = client,
+            registry = buildRegistry(null),
+            maxSteps = steps,
+            systemPrompt = {
+                systemPromptText() + "\n\n## You are a sub-agent\n" +
+                    "Do the task end to end, then reply with a compact report: what you did, what changed, how you verified it. " +
+                    "You cannot ask questions. You cannot spawn more sub-agents."
+            },
+            approver = approver,
+            model = provider.model,
+            maxTokens = provider.maxTokens,
+            temperature = provider.temperature,
+        )
+    }
+
+    private fun systemPromptText(): String {
+        val snapshot = settings.settings.value
+        val policy = when (snapshot.approvalPolicy) {
+            ApprovalPolicy.ALWAYS_ASK -> "ask before every shell command and file write"
+            ApprovalPolicy.SMART -> "ask before destructive commands, otherwise proceed"
+            ApprovalPolicy.AUTO -> "proceed without asking; the user has opted into autonomous mode"
+        }
+        return SystemPrompt.build(
+            runtimeLabel = runtime.label(snapshot.runtime),
+            cwd = runner.cwd,
+            workspaceLabel = workspace.root().absolutePath,
+            skillsIndex = skills.indexForPrompt(),
+            memoryDigest = if (snapshot.memoryEnabled) memory.digest() else "",
+            approvalPolicy = policy,
+            extra = snapshot.systemPromptExtra,
+            persona = dev.opencarl.persona.Personas.byId(snapshot.personaId, snapshot.customPersonas).prompt,
+            userProfile = userProfile(),
+            planDigest = plans.summary().take(1_200),
+        )
     }
 
     fun buildAgent(approver: suspend (ToolCall, String) -> Boolean): Agent {
         val snapshot = settings.settings.value
         val provider = snapshot.activeProvider
         val client = LlmFactory.create(http, provider, settings.apiKey(provider.id))
-        val registry = buildRegistry()
-        val policy = when (snapshot.approvalPolicy) {
-            ApprovalPolicy.ALWAYS_ASK -> "ask before every shell command and file write"
-            ApprovalPolicy.SMART -> "ask before destructive commands, otherwise proceed"
-            ApprovalPolicy.AUTO -> "proceed without asking; the user has opted into autonomous mode"
-        }
+        val registry = buildRegistry(approver)
         return Agent(
             client = client,
             registry = registry,
             maxSteps = snapshot.maxSteps,
-            systemPrompt = {
-                SystemPrompt.build(
-                    runtimeLabel = runtime.label(snapshot.runtime),
-                    cwd = runner.cwd,
-                    workspaceLabel = workspace.root().absolutePath,
-                    skillsIndex = skills.indexForPrompt(),
-                    memoryDigest = if (snapshot.memoryEnabled) memory.digest() else "",
-                    approvalPolicy = policy,
-                    extra = snapshot.systemPromptExtra,
-                    persona = dev.opencarl.persona.Personas.byId(snapshot.personaId, snapshot.customPersonas).prompt,
-                    userProfile = userProfile(),
-                    planDigest = plans.summary().take(1_200),
-                )
-            },
+            systemPrompt = { systemPromptText() },
             approver = approver,
             model = provider.model,
             maxTokens = provider.maxTokens,

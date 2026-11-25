@@ -78,6 +78,16 @@ class MemoryStore(private val fileProvider: () -> File) {
         persist(updated)
     }
 
+    /** Removes entries matching [predicate]; returns how many went. */
+    suspend fun removeWhere(predicate: (MemoryEntry) -> Boolean): Int = mutex.withLock {
+        val current = _entries.value
+        val kept = current.filterNot(predicate)
+        if (kept.size == current.size) return@withLock 0
+        _entries.value = kept
+        persist(kept)
+        current.size - kept.size
+    }
+
     suspend fun clear() = mutex.withLock {
         _entries.value = emptyList()
         persist(emptyList())

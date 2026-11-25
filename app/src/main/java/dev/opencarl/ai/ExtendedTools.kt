@@ -15,6 +15,11 @@ import dev.opencarl.privilege.PrivilegeManager
 import dev.opencarl.schedule.TaskScheduler
 import dev.opencarl.snapshot.SessionSnapshots
 import dev.opencarl.study.StudyStore
+import dev.opencarl.memory.KnowledgeBase
+import dev.opencarl.schedule.DeviceState
+import dev.opencarl.schedule.TriggerEngine
+import dev.opencarl.schedule.TriggerScheduler
+import dev.opencarl.schedule.TriggerStore
 import dev.opencarl.system.Diagnostics
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.JsonObject
@@ -51,6 +56,8 @@ class ExtendedTools(
     private val chatJson: () -> String,
     private val personaState: () -> Pair<String, List<Persona>>,
     private val setPersona: (String) -> Unit,
+    private val knowledge: KnowledgeBase,
+    private val triggers: TriggerStore,
 ) {
 
     private val profileFile: File get() = File(context.filesDir, "profile/user.json")
@@ -72,6 +79,8 @@ class ExtendedTools(
         registry.register(notifyTool(), ::runNotify)
         registry.register(personaTool(), ::runPersona)
         registry.register(profileTool(), ::runProfile)
+        registry.register(kbTool(), ::runKb)
+        registry.register(triggersTool(), ::runTriggers)
     }
 
     private fun schema(required: List<String>, properties: JsonObjectBuilder.() -> Unit): JsonObject =
@@ -666,6 +675,96 @@ class ExtendedTools(
             }
         }
         profileFile.writeText(json.toString())
+    }
+
+    // -------------------------------------------------- knowledge packs
+
+    private fun kbTool() = ToolSpec(
+        name = "kb",
+        description = "Knowledge packs: import a folder or file of notes, docs or code into memory so recall can cite it. Then search it instead of guessing.",
+        parameters = schema(listOf("action")) {
+            put("action", text("import | search | list | remove | stats"))
+            put("path", text("Folder or file to import, relative to the workspace."))
+            put("pack", text("Pack name, defaults to the folder name."))
+            put("query", text("Search text."))
+        },
+    )
+
+    private suspend fun runKb(args: JsonObject): String {
+        return when (args.str("action")?.lowercase()) {
+            "import" -> knowledge.import(
+                path = args.str("path") ?: return "path is required",
+                pack = args.str("pack").orEmpty(),
+            )
+            "search" -> {
+                val hits = knowledge.search(args.str("query").orEmpty(), 8)
+                if (hits.isEmpty()) "no matching chunks" else hits.joinToString("\n\n") { it.text.take(600) }
+            }
+            "remove" -> "removed ${knowledge.remove(args.str("pack") ?: return "pack is required")} chunks"
+            "stats" -> knowledge.stats()
+            else -> knowledge.packs().joinToString("\n").ifBlank { knowledge.stats() }
+        }
+    }
+
+    // ------------------------------------------------ device triggers
+
+    private fun triggersTool() = ToolSpec(
+        name = "triggers",
+        description = "Rules that fire on device state: battery below/above, charging, thermal level, wifi ssid, screen on/off, storage low. Each fires an agent prompt or a headless command. Polled every 15 minutes because Android throttles background sensors.",
+        parameters = schema(listOf("action")) {
+            put("action", text("add | list | remove | enable | disable | check"))
+            put("kind", text("battery_below | battery_above | charging | not_charging | thermal_at_least | wifi_ssid | screen_off | screen_on | storage_below"))
+            put("value", text("Threshold or ssid for the kind."))
+            put("prompt", text("Agent prompt to queue when it fires."))
+            put("command", text("Shell command to run when it fires."))
+            put("id", text("Trigger id."))
+        },
+    )
+
+    private fun runTriggers(args: JsonObject): String {
+        return when (args.str("action")?.lowercase()) {
+            "add" -> {
+                val kind = args.str("kind") ?: return "kind is required"
+                val trigger = triggers.add(
+                    kind = kind,
+                    value = args.str("value").orEmpty(),
+                    prompt = args.str("prompt").orEmpty(),
+                    command = args.str("command").orEmpty(),
+                )
+                TriggerScheduler(context).armNext()
+                "trigger #${trigger.id} watching $kind"
+            }
+            "list" -> triggers.load().joinToString("\n") { trigger ->
+                val state = if (trigger.enabled) "on " else "off"
+                "#${trigger.id} [$state] ${trigger.kind} ${trigger.value}" +
+                    (if (trigger.prompt.isNotBlank()) " -> prompt" else "") +
+                    (if (trigger.command.isNotBlank()) " -> command" else "")
+            }.ifBlank { "no triggers" }
+            "remove" -> {
+                val id = args.str("id")?.toLongOrNull() ?: return "id is required"
+                if (triggers.remove(id)) "removed #$id" else "no such trigger"
+            }
+            "enable", "disable" -> {
+                val id = args.str("id")?.toLongOrNull() ?: return "id is required"
+                val on = args.str("action")?.lowercase() == "enable"
+                if (triggers.setEnabled(id, on)) "#$id ${if (on) "enabled" else "disabled"}" else "no such trigger"
+            }
+            else -> {
+                val reading = DeviceState(context).read()
+                val firing = TriggerEngine(DeviceState(context)).evaluate(triggers.load(), reading)
+                buildString {
+                    append("battery ").append(reading.battery).append("%")
+                    append(if (reading.charging) " charging" else " on battery")
+                    append(", thermal ").append(reading.thermal)
+                    append(", screen ").append(if (reading.interactive) "on" else "off")
+                    append(", storage ").append(reading.storageFreePercent).append("% free")
+                    if (reading.ssid.isNotBlank()) append(", wifi ").append(reading.ssid)
+                    append("\n")
+                    append(if (firing.isEmpty()) "no trigger matches right now"
+                    else "would fire: " + firing.joinToString { "#${it.id} ${it.kind}" })
+                }
+            }
+        }
     }
 
     /** Accepts epoch millis, +30m, +2h, +1d, HH:mm, yyyy-MM-dd or yyyy-MM-dd HH:mm. */

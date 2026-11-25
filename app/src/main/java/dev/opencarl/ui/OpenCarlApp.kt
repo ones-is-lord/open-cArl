@@ -94,7 +94,7 @@ fun OpenCarlApp(vm: OpenCarlViewModel) {
                 ModalDrawerSheet(drawerContainerColor = MaterialTheme.colorScheme.surface) {
                     Column(Modifier.verticalScroll(rememberScrollState())) {
                         NeonWordmark(
-                            text = appearance.bannerLabel,
+                            text = appearance.brandLabel,
                             appearance = appearance,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                             maxSp = 46f,

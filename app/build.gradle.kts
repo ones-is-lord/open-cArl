@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -14,8 +16,8 @@ android {
         applicationId = "dev.opencarl"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
 
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
@@ -35,9 +37,37 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            // Supply a real keystore through keystore.properties (gitignored) or the
+            // CARL_KEYSTORE_* environment variables used by CI. Without one the build
+            // falls back to the debug key so the APK still installs.
+            val props = rootProject.file("keystore.properties")
+            val envStore = System.getenv("CARL_KEYSTORE")
+            if (props.exists()) {
+                val p = Properties().apply { props.inputStream().use { load(it) } }
+                storeFile = file(p.getProperty("storeFile"))
+                storePassword = p.getProperty("storePassword")
+                keyAlias = p.getProperty("keyAlias")
+                keyPassword = p.getProperty("keyPassword")
+            } else if (!envStore.isNullOrBlank()) {
+                storeFile = file(envStore)
+                storePassword = System.getenv("CARL_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("CARL_KEY_ALIAS") ?: "carl"
+                keyPassword = System.getenv("CARL_KEY_PASSWORD")
+            } else {
+                storeFile = file(System.getProperty("user.home") + "/.android/debug.keystore")
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }

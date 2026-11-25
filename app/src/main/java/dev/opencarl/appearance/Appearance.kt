@@ -39,6 +39,7 @@ data class AppearanceSettings(
     val bannerSizeSp: Int = 17,
     val terminalOffWhite: Boolean = true,
     val promptAccent: Boolean = true,
+    val brandTitle: String = "OPEN CARL",
 ) {
 
     fun colorOf(role: ColorRole): Color = Palette32.colorOf(
@@ -76,5 +77,8 @@ data class AppearanceSettings(
         ColorRole.CURSOR -> copy(cursor = colorId)
     }
 
-    val bannerLabel: String get() = bannerText.trim().ifEmpty { "open cArl" }
+    val bannerLabel: String
+        get() = bannerText.trim().ifEmpty { "AIN'T NONE OF THIS EVEN MATTERS" }
+
+    val brandLabel: String get() = brandTitle.trim().ifEmpty { "OPEN CARL" }
 }

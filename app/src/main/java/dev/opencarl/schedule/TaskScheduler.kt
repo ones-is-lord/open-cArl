@@ -138,12 +138,39 @@ class TaskScheduler(
     }
 }
 
+object ScheduleNotifier {
+    private const val CHANNEL = "schedule"
+
+    fun notify(context: Context, title: String, text: String) {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL, "Scheduled tasks", NotificationManager.IMPORTANCE_DEFAULT),
+        )
+        val open = PendingIntent.getActivity(
+            context,
+            0,
+            Intent().setClassName(context.packageName, "dev.opencarl.MainActivity"),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val notification = NotificationCompat.Builder(context, CHANNEL)
+            .setSmallIcon(android.R.drawable.ic_popup_reminder)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setAutoCancel(true)
+            .setContentIntent(open)
+            .build()
+        runCatching { manager.notify((System.currentTimeMillis() % 100_000).toInt(), notification) }
+    }
+}
+
 class ScheduledTaskReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val fileProvider = { File(context.filesDir, "schedule/tasks.json") }
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
             TaskScheduler(context, fileProvider).rescheduleAll()
+            TriggerScheduler(context).armNext()
             return
         }
         val raw = intent.getStringExtra(TaskScheduler.EXTRA_TASK) ?: return

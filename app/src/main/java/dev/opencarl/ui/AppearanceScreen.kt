@@ -46,9 +46,18 @@ fun AppearanceScreen(container: AppContainer, appearance: AppearanceSettings, on
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            SectionTitle("banner")
+            SectionTitle("branding")
+            OutlinedTextField(
+                value = appearance.brandTitle,
+                onValueChange = { text -> container.settings.updateAppearance { it.copy(brandTitle = text) } },
+                label = { Text("Wordmark", fontSize = 12.sp) },
+                placeholder = { Text("OPEN CARL", fontSize = 12.sp) },
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
+                modifier = Modifier.fillMaxWidth(),
+            )
             NeonWordmark(
-                text = appearance.bannerLabel,
+                text = appearance.brandLabel,
                 appearance = appearance,
                 modifier = Modifier.fillMaxWidth(),
                 maxSp = 44f,
@@ -72,8 +81,8 @@ fun AppearanceScreen(container: AppContainer, appearance: AppearanceSettings, on
             OutlinedTextField(
                 value = appearance.bannerText,
                 onValueChange = { text -> container.settings.updateAppearance { it.copy(bannerText = text) } },
-                label = { Text("Banner text", fontSize = 12.sp) },
-                placeholder = { Text("open cArl", fontSize = 12.sp) },
+                label = { Text("Tagline (banner)", fontSize = 12.sp) },
+                placeholder = { Text("AIN'T NONE OF THIS EVEN MATTERS", fontSize = 12.sp) },
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
                 modifier = Modifier.fillMaxWidth(),

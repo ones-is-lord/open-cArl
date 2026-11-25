@@ -62,6 +62,15 @@ gradle :app:testDebugUnitTest
 - Compose has no `skewX` on `graphicsLayer`; the CSS slant is approximated with
   `FontStyle.Italic`.
 
+## UI shell
+
+- `ui/neon/NeonFrame.kt` draws the CRT border as an overlay; `CarlTitleBar.kt`
+  is the window chrome; `Splash.kt` is the launch screen.
+- `carl_splash` and `carl_avatar` drawables are looked up by name at runtime, so
+  art can be dropped in without touching code.
+- Keep the terminal's own colours and monospace face; the chrome never styles
+  terminal text.
+
 ## Gotchas
 
 - In Kotlin string literals `\s` is not a valid escape — use `\\s` or raw strings.

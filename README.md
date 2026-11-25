@@ -111,7 +111,7 @@ undo.
 
 ## The command surface
 
-34 tools, all real:
+37 tools, all real:
 
 | Group | Tools |
 |---|---|
@@ -120,8 +120,22 @@ undo.
 | Network | `net` (ping, dns, http probe, TCP port scan, interfaces, public IP), `wifi` (scan, wardriving CSV, band summary) |
 | Device | `device_info`, `screen` (read/tap/type/swipe/back/home/recents), `diagnostics` (cpu, memory, storage, battery, thermal, top, logcat, dumpsys), `apps`, `storage`, `root`, `privileged_shell`, `run_script`, `clipboard`, `notify` |
 | Knowledge | `deep_research`, `fetch_url`, `use_skill`, `list_skills`, `remember`, `recall`, `profile` (habits, needs, wants, plans), `plan` (persistent todos), `study` (SM-2 flashcards), `think` |
-| Automation | `schedule` (prompt or headless command, one-off or repeating), `snapshot` (create/list/diff/restore), `persona` (switch your own tone) |
+| Delegation | `spawn` (sub-agent with a fresh context, depth-capped at one level) |
+| Automation | `triggers` (battery, charging, thermal, wifi, screen, storage), `schedule`, `snapshot`, `persona` |
+| Knowledge | `kb` (import a folder of notes or code into memory with provenance, search it, remove a pack) |
 | MCP | `mcp__<server>__<tool>` for every connected server |
+
+## Building a release
+
+```bash
+./gradlew :app:assembleRelease     # app/build/outputs/apk/release/app-release.apk
+```
+
+Signing reads `keystore.properties` (gitignored) or the `CARL_KEYSTORE*`
+environment variables. With neither it falls back to the Android debug key, so
+the APK installs but is not Play-ready and cannot be upgraded over a build signed
+with a different key. `.github/workflows/build.yml` runs the tests, builds both
+APKs on every push, and attaches the release APK to any `v*` tag.
 
 ## Testing
 
@@ -133,6 +147,35 @@ tools/device-smoke.sh              # installs, loads the terminal, fails on cras
 `TerminalStressTest` pushes 4 MB of coloured output through the parser (about
 9.6 MB/s on the JVM), churns the alternate screen 500 times, resizes 300 times,
 and hammers the buffer from four writer threads plus a reader.
+
+## The window
+
+The main screen is one CRT window, built from the reference art:
+
+- a rounded gradient border (magenta → rose → violet → cyan) with bloom and a
+  deterministic distressed-print texture, drawn as an overlay so the terminal
+  keeps its own layout;
+- a title bar with the Carl avatar, the OPEN CARL wordmark in yellow-to-orange
+  neon, a magenta rule and the cyan tagline;
+- the three window glyphs: minus collapses the agent panel, square opens
+  appearance, X closes the panel or opens the drawer;
+- a hairline gradient under the bar and a dim status line with runtime and
+  provider.
+
+The tagline is the persistent user banner: change the words, the case, the size
+or hide it entirely in Appearance. The wordmark text is editable too.
+
+### Swapping in your own art
+
+Two drawables are picked up automatically when they exist, no code change:
+
+| File | Used for |
+|---|---|
+| `app/src/main/res/drawable/carl_splash.png` | full-screen launch art, letterboxed on black, 1.2 s |
+| `app/src/main/res/drawable/carl_avatar.png` | circular portrait in the title bar |
+
+Until they are present the app falls back to the wordmark on black and to a
+screenprint-style placeholder avatar, so nothing looks broken.
 
 ## Neon typography
 

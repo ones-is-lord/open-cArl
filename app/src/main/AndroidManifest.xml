@@ -93,6 +93,10 @@
         </receiver>
 
         <receiver
+            android:name=".schedule.DeviceTriggerReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".system.InstallResultReceiver"
             android:exported="false" />
 
