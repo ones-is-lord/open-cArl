@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -16,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Extension
@@ -69,6 +71,7 @@ private enum class Route(val label: String, val icon: ImageVector) {
     PERSONAS("Personas", Icons.Filled.Psychology),
     SNAPSHOTS("Snapshots", Icons.Filled.Refresh),
     DIAGNOSTICS("Diagnostics", Icons.Filled.BugReport),
+    CHEATSHEET("Cheat sheet", Icons.Filled.MenuBook),
 }
 
 @Composable
@@ -76,7 +79,7 @@ fun OpenCarlApp(vm: OpenCarlViewModel) {
     val settings by vm.container.settings.settings.collectAsStateSafe()
     val appearance = settings.appearance
     var route by remember { mutableStateOf<Route?>(null) }
-    var chatOpen by remember { mutableStateOf(false) }
+    var paneMode by remember { mutableStateOf(PaneMode.SPLIT) }
     val drawer = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val runtimeLabel = remember(settings.runtime.backend, settings.runtime.distro) {
@@ -122,9 +125,9 @@ fun OpenCarlApp(vm: OpenCarlViewModel) {
                         NavigationDrawerItem(
                             label = { Text("Agent") },
                             icon = { Icon(Icons.Filled.SmartToy, contentDescription = null) },
-                            selected = chatOpen,
+                            selected = false,
                             onClick = {
-                                chatOpen = true
+                                paneMode = PaneMode.CHAT
                                 route = null
                                 scope.launch { drawer.close() }
                             },
@@ -155,12 +158,18 @@ fun OpenCarlApp(vm: OpenCarlViewModel) {
                 }
             },
         ) {
+            if (!settings.onboarded) {
+                dev.opencarl.ui.onboarding.OnboardingScreen(appearance = appearance) { modelId ->
+                    vm.container.settings.update { it.copy(onboarded = true, chosenModelId = modelId) }
+                }
+                return@ModalNavigationDrawer
+            }
             Column(Modifier.fillMaxSize()) {
                 CarlHeader(
                     appearance = appearance,
                     subtitle = runtimeLabel + " · " + settings.activeProvider.name,
                     onMenu = { scope.launch { drawer.open() } },
-                    onChat = { chatOpen = !chatOpen },
+                    onChat = { paneMode = if (paneMode == PaneMode.CHAT) PaneMode.TERMINAL else PaneMode.CHAT },
                     onSettings = { route = Route.APPEARANCE },
                 )
                 if (settings.dgafEnabled) {
@@ -179,28 +188,25 @@ fun OpenCarlApp(vm: OpenCarlViewModel) {
                         Text("revoke", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                     }
                 }
-                Box(Modifier.weight(1f).fillMaxWidth().imePadding()) {
-                    TerminalPane(
-                        container = vm.container,
-                        appearance = appearance,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    if (chatOpen) {
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .fillMaxHeight(0.66f)
-                                .background(MaterialTheme.colorScheme.surface),
-                            color = MaterialTheme.colorScheme.surface,
-                        ) {
-                            ChatPanel(
-                                vm = vm,
-                                appearance = appearance,
-                                onClose = { chatOpen = false },
-                            )
+                StatusStrip()
+                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().imePadding()) {
+                    val stacked = maxWidth < 600.dp
+                    when (paneMode) {
+                        PaneMode.TERMINAL -> CliBox("terminal") {
+                            TerminalPane(vm.container, appearance, Modifier.fillMaxSize())
                         }
+                        PaneMode.CHAT -> CliBox("agent") {
+                            ChatPanel(vm = vm, appearance = appearance, onClose = { paneMode = PaneMode.TERMINAL })
+                        }
+                        PaneMode.SPLIT -> SplitPanes(vm = vm, appearance = appearance, stacked = stacked)
                     }
                 }
+                PaneBar(
+                    mode = paneMode,
+                    onMode = { paneMode = it },
+                    onGuide = { route = Route.CHEATSHEET },
+                    onMore = { scope.launch { drawer.open() } },
+                )
             }
         }
 
@@ -218,6 +224,7 @@ fun OpenCarlApp(vm: OpenCarlViewModel) {
                 Route.PERSONAS -> PersonasScreen(vm.container, appearance) { route = null }
                 Route.SNAPSHOTS -> SnapshotsScreen(vm.container, appearance) { route = null }
                 Route.DIAGNOSTICS -> DiagnosticsScreen(vm.container, appearance) { route = null }
+                Route.CHEATSHEET -> CheatSheetScreen(vm.container, appearance) { route = null }
             }
         }
     }

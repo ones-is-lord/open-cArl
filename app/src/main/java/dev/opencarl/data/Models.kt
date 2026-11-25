@@ -76,6 +76,8 @@ data class AppSettings(
     val customPersonas: List<Persona> = emptyList(),
     val speakReplies: Boolean = false,
     val snapshotBeforeRisky: Boolean = true,
+    val onboarded: Boolean = false,
+    val chosenModelId: String = "",
 ) {
     val activeProvider: ProviderConfig
         get() = providers.firstOrNull { it.id == activeProviderId } ?: providers.first()
