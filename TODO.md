@@ -13,10 +13,9 @@ daily-driver release, not by what is fun.
       `tools/import-art.sh splash.png icon.png logo.png`. Slots are wired and
       fall back gracefully, so this is cosmetic but it is the whole point of the
       art round.
-- [ ] **Push the repo and cut the release.** The GitHub token in this
-      environment is read-only: `git push` returns 403 and `gh repo create`
-      reports missing permissions. Needs a token with `contents:write` on
-      `ones-is-lord/open-cArl`.
+- [x] **Push the repo and cut the release.** Done: `main` is on GitHub and
+      v0.2.0 carries the APK —
+      https://github.com/ones-is-lord/open-cArl/releases/tag/v0.2.0
 - [ ] **Decide the signing key.** The APK currently falls back to the Android
       debug key. Fine for sideloading, wrong for anything else, and it cannot be
       upgraded over later without uninstalling.

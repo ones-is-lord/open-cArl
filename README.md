@@ -148,6 +148,16 @@ tools/device-smoke.sh              # installs, loads the terminal, fails on cras
 9.6 MB/s on the JVM), churns the alternate screen 500 times, resizes 300 times,
 and hammers the buffer from four writer threads plus a reader.
 
+## Install
+
+```bash
+curl -LO https://github.com/ones-is-lord/open-cArl/releases/latest/download/open-carl-0.2.0.apk
+adb install -r open-carl-0.2.0.apk
+```
+
+Android 8.0 (API 26) or newer. Signed with the debug key, so it installs but is
+not Play-ready — see [docs/BUILD.md](docs/BUILD.md).
+
 ## The window
 
 The main screen is one CRT window, built from the reference art:
