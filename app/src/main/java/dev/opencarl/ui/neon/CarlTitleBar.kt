@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -73,9 +74,8 @@ fun CarlTitleBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             BoxWithConstraints(Modifier.weight(0.44f)) {
-                BrandWordmark(
-                    text = appearance.brandTitle,
-                    italic = appearance.neonItalic,
+                LogoMark(
+                    appearance = appearance,
                     availablePx = with(LocalDensity.current) { maxWidth.toPx() },
                     maxSp = 30f,
                     minSp = 12f,
@@ -98,6 +98,42 @@ fun CarlTitleBar(
             }
         }
         WindowControls(onMinimize = onMinimize, onMaximize = onMaximize, onClose = onClose)
+    }
+}
+
+/**
+ * Uses a drawable named carl_logo (the brush wordmark) when one is bundled,
+ * otherwise renders the Oxanium wordmark.
+ */
+@Composable
+fun LogoMark(
+    appearance: AppearanceSettings,
+    availablePx: Float,
+    maxSp: Float,
+    minSp: Float,
+    height: Dp = 30.dp,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val art = remember {
+        context.resources.getIdentifier("carl_logo", "drawable", context.packageName).takeIf { it != 0 }
+    }
+    if (art != null) {
+        Image(
+            painter = painterResource(id = art),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            alignment = Alignment.CenterStart,
+            modifier = modifier.fillMaxWidth().height(height),
+        )
+    } else {
+        BrandWordmark(
+            text = appearance.brandTitle,
+            italic = appearance.neonItalic,
+            availablePx = availablePx,
+            maxSp = maxSp,
+            minSp = minSp,
+        )
     }
 }
 

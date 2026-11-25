@@ -171,8 +171,17 @@ Two drawables are picked up automatically when they exist, no code change:
 
 | File | Used for |
 |---|---|
-| `app/src/main/res/drawable/carl_splash.png` | full-screen launch art, letterboxed on black, 1.2 s |
-| `app/src/main/res/drawable/carl_avatar.png` | circular portrait in the title bar |
+| `app/src/main/res/drawable-nodpi/carl_splash.png` | full-screen launch art, letterboxed on black, 1.2 s |
+| `app/src/main/res/drawable-nodpi/carl_logo.png` | brush wordmark in the title bar and drawer |
+| `app/src/main/res/drawable-nodpi/carl_avatar.png` | circular portrait in the title bar |
+| `app/src/main/res/mipmap-*dpi/ic_launcher_foreground.png` | adaptive launcher icon, art inside the 66% safe zone |
+
+One command does all four, including density buckets and the circular avatar
+crop:
+
+```bash
+tools/import-art.sh splash.png icon.png logo.png
+```
 
 Until they are present the app falls back to the wordmark on black and to a
 screenprint-style placeholder avatar, so nothing looks broken.

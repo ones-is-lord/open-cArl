@@ -66,8 +66,10 @@ gradle :app:testDebugUnitTest
 
 - `ui/neon/NeonFrame.kt` draws the CRT border as an overlay; `CarlTitleBar.kt`
   is the window chrome; `Splash.kt` is the launch screen.
-- `carl_splash` and `carl_avatar` drawables are looked up by name at runtime, so
-  art can be dropped in without touching code.
+- `carl_splash`, `carl_logo` and `carl_avatar` drawables are looked up by name at
+  runtime, so art can be dropped in without touching code.
+- `tools/import-art.sh` turns the three source images into those resources and
+  the launcher icon densities.
 - Keep the terminal's own colours and monospace face; the chrome never styles
   terminal text.
 

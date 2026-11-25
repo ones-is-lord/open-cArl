@@ -56,6 +56,8 @@ android {
                 keyAlias = System.getenv("CARL_KEY_ALIAS") ?: "carl"
                 keyPassword = System.getenv("CARL_KEY_PASSWORD")
             } else {
+                // No key supplied: AGP's own debug config generates and manages
+                // ~/.android/debug.keystore, so nothing here can go stale.
                 storeFile = file(System.getProperty("user.home") + "/.android/debug.keystore")
                 storePassword = "android"
                 keyAlias = "androiddebugkey"
@@ -67,7 +69,11 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (rootProject.file("keystore.properties").exists() || !System.getenv("CARL_KEYSTORE").isNullOrBlank()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
