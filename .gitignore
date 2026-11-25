@@ -15,3 +15,6 @@ captures/
 
 # Toolchain installed by the sandbox (never commit)
 .toolchain/
+
+# build outputs
+dist/
