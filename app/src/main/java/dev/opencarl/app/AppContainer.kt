@@ -17,6 +17,9 @@ import dev.opencarl.runtime.RuntimeController
 import dev.opencarl.runtime.Workspace
 import dev.opencarl.skills.SkillStore
 import dev.opencarl.terminal.PtySession
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -64,6 +67,22 @@ class AppContainer(context: Context) {
     val datasets = dev.opencarl.finetune.DatasetExporter { File(appContext.filesDir, "workspace") }
     val models = dev.opencarl.local.ModelDownloader({ File(appContext.filesDir, "models") }, http)
     val updates = dev.opencarl.update.UpdateManager(appContext, privilege, skills, http)
+    val plans = dev.opencarl.plan.PlanStore { File(appContext.filesDir, "plan/tasks.json") }
+    val study = dev.opencarl.study.StudyStore { File(appContext.filesDir, "study/cards.json") }
+    val netTools = dev.opencarl.net.NetTools(http)
+    val wifi = dev.opencarl.net.WifiScanner(appContext)
+    val diagnostics = dev.opencarl.system.Diagnostics(appContext, privilege)
+    val scheduler = dev.opencarl.schedule.TaskScheduler(appContext) { File(appContext.filesDir, "schedule/tasks.json") }
+    val snapshots = dev.opencarl.snapshot.SessionSnapshots(
+        rootDir = { File(appContext.filesDir, "snapshots") },
+        workspaceRoot = { workspace.root() },
+    )
+    val speaker = dev.opencarl.voice.Speaker(appContext)
+
+    init {
+        plans.load()
+        study.load()
+    }
 
     private val _sessionExit = MutableSharedFlow<Int>(extraBufferCapacity = 4)
     val sessionExit: SharedFlow<Int> = _sessionExit.asSharedFlow()
@@ -100,6 +119,19 @@ class AppContainer(context: Context) {
         pty = if (started) session else null
         ptyKey = key
         return pty
+    }
+
+    fun userProfile(): String {
+        val file = File(appContext.filesDir, "profile/user.json")
+        if (!file.exists()) return ""
+        return runCatching {
+            val element = kotlinx.serialization.json.Json.parseToJsonElement(file.readText())
+            element.jsonObject.entries.joinToString("\n") { (key, value) ->
+                val values = (value as? kotlinx.serialization.json.JsonArray)
+                    ?.mapNotNull { it.jsonPrimitive.contentOrNull }.orEmpty()
+                "$key: " + values.joinToString("; ")
+            }
+        }.getOrDefault("")
     }
 
     fun writeTerminal(text: String) {
@@ -152,6 +184,27 @@ class AppContainer(context: Context) {
             datasets = datasets,
             emulator = emulator,
         ).install(registry)
+        dev.opencarl.ai.ExtendedTools(
+            context = appContext,
+            privilege = privilege,
+            net = netTools,
+            wifi = wifi,
+            diagnostics = diagnostics,
+            plans = plans,
+            study = study,
+            scheduler = scheduler,
+            snapshots = snapshots,
+            filesRoot = { workspace.root() },
+            sendToShell = { text -> writeTerminal(text) },
+            screenText = { emulator.visibleText() },
+            transcript = { emulator.visibleText() },
+            chatJson = { dev.opencarl.app.ChatMirror.json() },
+            personaState = {
+                val current = settings.settings.value
+                current.personaId to current.customPersonas
+            },
+            setPersona = { id -> settings.update { it.copy(personaId = id) } },
+        ).install(registry)
         mcp.registerTools(registry)
         return registry
     }
@@ -179,6 +232,9 @@ class AppContainer(context: Context) {
                     memoryDigest = if (snapshot.memoryEnabled) memory.digest() else "",
                     approvalPolicy = policy,
                     extra = snapshot.systemPromptExtra,
+                    persona = dev.opencarl.persona.Personas.byId(snapshot.personaId, snapshot.customPersonas).prompt,
+                    userProfile = userProfile(),
+                    planDigest = plans.summary().take(1_200),
                 )
             },
             approver = approver,

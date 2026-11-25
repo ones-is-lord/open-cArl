@@ -93,17 +93,81 @@ app/src/main/java/dev/opencarl/
 app/src/main/cpp/pty.c   forkpty wrapper
 ```
 
+## Personas and voice
+
+Eight built-in voices (Carl is the default: dry, sarcastic, extremely direct) plus
+custom ones you write yourself. A persona changes tone and method, never the
+rules. Replies can be read aloud with Android TTS; markdown, code fences and URLs
+are stripped first. There is **no microphone path anywhere in this app** — input is
+text, always.
+
+## Session snapshots
+
+Every snapshot stores the workspace as a zip, the visible terminal and the
+conversation. Diff compares CRC32 per file against the live workspace; restore
+replaces the workspace. When `snapshotBeforeRisky` is on (default), a snapshot is
+taken automatically before any risky tool call, so a bad `rm` is one tap from
+undo.
+
+## The command surface
+
+34 tools, all real:
+
+| Group | Tools |
+|---|---|
+| Shell and files | `bash`, `read_file`, `write_file`, `list_dir`, `files` (list/read/write/append/mkdir/delete/move/copy/stat/search), `script` (write/run/list/delete your own scripts), `code` (run python3/node/sh snippets), `shell_send` (type into the live PTY) |
+| Packages | `packages` (search/install/remove/upgrade/info, auto-detects apk, apt or pkg) |
+| Network | `net` (ping, dns, http probe, TCP port scan, interfaces, public IP), `wifi` (scan, wardriving CSV, band summary) |
+| Device | `device_info`, `screen` (read/tap/type/swipe/back/home/recents), `diagnostics` (cpu, memory, storage, battery, thermal, top, logcat, dumpsys), `apps`, `storage`, `root`, `privileged_shell`, `run_script`, `clipboard`, `notify` |
+| Knowledge | `deep_research`, `fetch_url`, `use_skill`, `list_skills`, `remember`, `recall`, `profile` (habits, needs, wants, plans), `plan` (persistent todos), `study` (SM-2 flashcards), `think` |
+| Automation | `schedule` (prompt or headless command, one-off or repeating), `snapshot` (create/list/diff/restore), `persona` (switch your own tone) |
+| MCP | `mcp__<server>__<tool>` for every connected server |
+
+## Testing
+
+```bash
+./gradlew :app:testDebugUnitTest   # 34 tests
+tools/device-smoke.sh              # installs, loads the terminal, fails on crash
+```
+
+`TerminalStressTest` pushes 4 MB of coloured output through the parser (about
+9.6 MB/s on the JVM), churns the alternate screen 500 times, resizes 300 times,
+and hammers the buffer from four writer threads plus a reader.
+
 ## Honest limits
 
-- Not yet run on a physical device: everything compiles, packages and 28 unit
-  tests pass, but the PTY, WebView-free renderer and accessibility paths need a
-  real phone before anyone calls this release-ready.
+- Still not run on a physical device: 34 unit tests pass and the parser survives
+  4 MB bursts, but the PTY, the Compose renderer and the accessibility paths need
+  a real phone. `tools/device-smoke.sh` is the script to prove it; it has not
+  been run yet because this sandbox has no device.
+- Scheduling fires prompts only when the app is open (a notification tells you),
+  because a headless agent needs the process alive. Shell commands do run
+  headless.
+- Wardriving logs what Android lets a foreground app see; scans are throttled and
+  need the location permission.
+- Wifi, clipboard and notification tools are blocked until you grant the matching
+  permissions, and they say so instead of failing silently.
 - No on-device training. Datasets and recipes are generated; training happens on
   a workstation or in the userland.
 - proot and rootfs are user-supplied (licensing and size).
 - Shizuku and accessibility must be enabled by the user; without them the agent
   falls back to app-uid tools and tells you so.
 - Debug build only: no signing config, no R8 rules, no instrumented tests.
+
+## Layout additions
+
+```
+  ai/ExtendedTools.kt   files, code, packages, net, wifi, diagnostics, plan,
+                        study, schedule, snapshot, clipboard, notify, persona,
+                        profile, plus the date parser they share
+  net/                  ping/dns/probe/port scan, wifi scan and CSV logging
+  persona/              built-in voices and the custom persona model
+  plan/ study/          persistent tasks, SM-2 flashcards
+  schedule/             AlarmManager tasks and their receiver
+  snapshot/             zip snapshots, diff and restore
+  voice/Speaker.kt      text to speech, output only
+tools/device-smoke.sh   adb smoke test for a real phone
+```
 
 ## Licence
 

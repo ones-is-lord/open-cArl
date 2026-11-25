@@ -63,6 +63,8 @@ private enum class Route(val label: String, val icon: ImageVector) {
     RUNTIME("Runtime", Icons.Filled.Terminal),
     SYSTEM("System", Icons.Filled.Build),
     DGAF("D.G.A.F.", Icons.Filled.Warning),
+    PERSONAS("Personas", Icons.Filled.Psychology),
+    SNAPSHOTS("Snapshots", Icons.Filled.Refresh),
 }
 
 @Composable
@@ -210,6 +212,8 @@ fun OpenCarlApp(vm: OpenCarlViewModel) {
                 Route.RUNTIME -> RuntimeScreen(vm.container, appearance) { route = null }
                 Route.SYSTEM -> SystemScreen(vm.container, appearance) { route = null }
                 Route.DGAF -> DgafScreen(vm.container, appearance) { route = null }
+                Route.PERSONAS -> PersonasScreen(vm.container, appearance) { route = null }
+                Route.SNAPSHOTS -> SnapshotsScreen(vm.container, appearance) { route = null }
             }
         }
     }

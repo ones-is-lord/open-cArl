@@ -38,6 +38,20 @@ gradle :app:testDebugUnitTest
 - D.G.A.F. bypasses the approval gate only when `dgafEnabled && dgafAcceptedAt > 0`;
   both are set exclusively by the two-consent flow in `ui/DgafScreen`.
 
+## More architecture notes
+
+- Tools live in three installers: `BuiltinTools` (shell, files, skills, memory,
+  fetch), `SystemTools` (device, screen, privilege, scripts, apps, root,
+  research) and `ExtendedTools` (files/code/packages/net/wifi/diagnostics/plan/
+  study/schedule/snapshot/clipboard/notify/persona/profile). Add new tools to
+  the matching class, not to the agent loop.
+- Personas are appended to the system prompt as a Voice section; hard rules stay
+  in `SystemPrompt` so a persona can never remove them.
+- `ChatMirror` is how tools read the conversation without depending on the view
+  model.
+- `snapshotBeforeRisky` snapshots in `requestApproval` before the dialog, so the
+  undo point exists even if the user says yes to something stupid.
+
 ## Gotchas
 
 - In Kotlin string literals `\s` is not a valid escape — use `\\s` or raw strings.
@@ -47,5 +61,9 @@ gradle :app:testDebugUnitTest
 - `StorageStatsManager.queryStatsForUid` needs a `UUID` volume id from
   `StorageManager.getUuidForPath`; there is no single-argument overload.
 - `Shizuku.newProcess` is private in 13.1.5 — use a bound user service.
+- Compose screens must not call suspend functions in `onClick`; wrap in
+  `rememberCoroutineScope().launch`.
+- Block-bodied Kotlin functions need an explicit `return` for the final
+  expression; expression bodies (`= when {}`) do not.
 - Heredoc-written Kotlin occasionally picks up a stray leading character; the
   compiler catches it, `grep '^[a-z]\{1,3\}[A-Z(]'` finds it faster.

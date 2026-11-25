@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.opencarl.ai.AgentEvent
 import dev.opencarl.ai.LlmMessage
+import kotlinx.serialization.json.put
 import dev.opencarl.ai.ToolCall
 import dev.opencarl.ai.parseArgs
 import dev.opencarl.ai.str
@@ -37,6 +38,38 @@ class OpenCarlViewModel(application: Application) : AndroidViewModel(application
 
     init {
         viewModelScope.launch { container.memory.load() }
+        ChatMirror.set {
+            kotlinx.serialization.json.buildJsonArray {
+                _chat.value.forEach { item ->
+                    when (item) {
+                        is ChatItem.User -> add(
+                            kotlinx.serialization.json.buildJsonObject {
+                                put("role", "user")
+                                put("text", item.text)
+                            },
+                        )
+                        is ChatItem.Assistant -> add(
+                            kotlinx.serialization.json.buildJsonObject {
+                                put("role", "assistant")
+                                put("text", item.text)
+                            },
+                        )
+                        else -> Unit
+                    }
+                }
+            }.toString()
+        }
+        viewModelScope.launch {
+            dev.opencarl.schedule.PendingPrompts.prompt.collect { queued ->
+                if (!queued.isNullOrBlank() && !_busy.value) send(queued)
+            }
+        }
+    }
+
+    private fun speakLatest(text: String) {
+        if (text.isBlank()) return
+        if (!container.settings.settings.value.speakReplies) return
+        container.speaker.speak(text)
     }
 
     fun send(text: String) {
@@ -56,6 +89,9 @@ class OpenCarlViewModel(application: Application) : AndroidViewModel(application
                 _chat.update { it + ChatItem.Error(nextId++, t.message ?: t.javaClass.simpleName) }
             } finally {
                 _busy.value = false
+                _chat.value.lastOrNull { it is ChatItem.Assistant }?.let { item ->
+                    speakLatest((item as ChatItem.Assistant).text)
+                }
             }
         }
     }
@@ -95,6 +131,16 @@ class OpenCarlViewModel(application: Application) : AndroidViewModel(application
 
     private suspend fun requestApproval(call: ToolCall, description: String): Boolean {
         val settings = container.settings.settings.value
+        if (settings.snapshotBeforeRisky && isRisky(call)) {
+            runCatching {
+                container.snapshots.create(
+                    name = "before ${call.name}",
+                    note = description.take(200),
+                    transcript = container.emulator.visibleText(),
+                    chatJson = ChatMirror.json(),
+                )
+            }
+        }
         when (settings.toolPolicies[call.name]?.lowercase()) {
             "allow" -> return true
             "deny" -> return false

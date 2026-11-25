@@ -1,6 +1,7 @@
 package dev.opencarl.data
 
 import dev.opencarl.appearance.AppearanceSettings
+import dev.opencarl.persona.Persona
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -71,6 +72,9 @@ data class AppSettings(
     val backgroundServiceEnabled: Boolean = false,
     val localModelId: String = "",
     val localServerPort: Int = 8080,
+    val customPersonas: List<Persona> = emptyList(),
+    val speakReplies: Boolean = false,
+    val snapshotBeforeRisky: Boolean = true,
 ) {
     val activeProvider: ProviderConfig
         get() = providers.firstOrNull { it.id == activeProviderId } ?: providers.first()

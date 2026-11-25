@@ -10,6 +10,9 @@ object SystemPrompt {
         memoryDigest: String,
         approvalPolicy: String,
         extra: String,
+        persona: String = "",
+        userProfile: String = "",
+        planDigest: String = "",
     ): String = buildString {
         appendLine("You are open cArl, a terminal-native coding and systems agent running on the user's Android device.")
         appendLine("You have a real PTY shell, a Linux userland when one is provisioned, MCP tools, and long-term memory.")
@@ -34,6 +37,21 @@ object SystemPrompt {
         appendLine("- use_skill(name), list_skills(), remember(text, kind, tags, importance), recall(query, limit), fetch_url(url)")
         appendLine("- Tools named mcp__<server>__<tool> come from connected MCP servers.")
         appendLine()
+        if (persona.isNotBlank()) {
+            appendLine("## Voice")
+            appendLine(persona)
+            appendLine()
+        }
+        if (userProfile.isNotBlank()) {
+            appendLine("## What you know about this user")
+            appendLine(userProfile)
+            appendLine()
+        }
+        if (planDigest.isNotBlank()) {
+            appendLine("## Open tasks")
+            appendLine(planDigest)
+            appendLine()
+        }
         if (skillsIndex.isNotBlank()) {
             appendLine("## Skills")
             appendLine("Load a skill with use_skill before doing a task it covers.")
