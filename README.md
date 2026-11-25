@@ -160,6 +160,10 @@ not Play-ready — see [docs/BUILD.md](docs/BUILD.md).
 
 ## The window
 
+Split CLI panes, onboarding, a cheat sheet and a live status strip. See
+[docs/INTERFACE.md](docs/INTERFACE.md) for the layout and the reasoning.
+
+
 The main screen is one CRT window, built from the reference art:
 
 - a rounded gradient border (magenta → rose → violet → cyan) with bloom and a

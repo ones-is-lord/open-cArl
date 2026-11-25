@@ -23,6 +23,19 @@ daily-driver release, not by what is fun.
       first `apt` run, and that `libproot.so` extraction under W^X actually
       works on Android 14 and 15.
 
+## Interface round (0.3.0)
+
+- [x] Standard Android bottom navigation (Terminal / Chat / Split / Guide / More)
+- [x] Two identical CLI boxes, side by side above 600 dp, stacked below
+- [x] Onboarding with device overview and model recommendation from measured RAM
+- [x] Cheat sheet of every tool with use case and example
+- [x] Status strip: link, signal bars, battery, storage, tap to network picker
+- [ ] Independent PTY for the chat pane, so the shell keeps its own cwd and
+      scrollback while the agent works
+- [ ] Make the model picker actually download the chosen model. It records the
+      choice; nothing fetches the weights yet.
+- [ ] Quick-connect that can join a network, not just open the system picker
+
 ## Should exist before 1.0
 
 - [ ] Foreground service for long agent runs, so a run survives the app being
