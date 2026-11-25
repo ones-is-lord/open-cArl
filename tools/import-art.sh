@@ -43,6 +43,14 @@ if box:
 scale = min(1.0, 1600 / logo.size[0])
 if scale < 1.0:
     logo = logo.resize((int(logo.size[0] * scale), int(logo.size[1] * scale)), Image.LANCZOS)
+# key out the near-black backdrop so the wordmark sits on any surface
+logo = logo.convert('RGBA')
+px = logo.load()
+for y in range(logo.size[1]):
+    for x in range(logo.size[0]):
+        r, g, b, a = px[x, y]
+        if r < 26 and g < 26 and b < 26:
+            px[x, y] = (r, g, b, 0)
 save(logo, f'{NODPI}/carl_logo.png')
 
 # icon: circular crop of the badge centre, used as the title-bar avatar
