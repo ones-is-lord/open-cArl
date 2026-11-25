@@ -24,7 +24,7 @@ class RuntimeController(private val context: Context) {
 
     fun shellLaunch(settings: RuntimeSettings): ShellLaunch =
         if (settings.backend == RuntimeBackend.PROOT && prootInstalled()) prootLaunch(settings)
-        else deviceLaunch()
+        else deviceLaunch(settings)
 
     fun label(settings: RuntimeSettings): String = when {
         settings.backend == RuntimeBackend.PROOT && prootInstalled() ->
@@ -34,7 +34,7 @@ class RuntimeController(private val context: Context) {
         else -> "device shell"
     }
 
-    private fun deviceLaunch(): ShellLaunch {
+    private fun deviceLaunch(settings: RuntimeSettings): ShellLaunch {
         val path = listOf(
             "/system/bin",
             "/system/xbin",
@@ -53,7 +53,7 @@ class RuntimeController(private val context: Context) {
                 "LANG" to "C.UTF-8",
                 "PAGER" to "cat",
                 "SHELL" to "/system/bin/sh",
-            ),
+            ) + promptEnv(settings),
             cwd = homeDir.absolutePath,
             label = "device",
         )
@@ -83,6 +83,11 @@ class RuntimeController(private val context: Context) {
             "LANG=C.UTF-8",
             "PAGER=cat",
             "SHELL=/bin/sh",
+        )
+        if (settings.promptAccent) {
+            args += "PS1=\u001b[38;5;201m\\w\u001b[0m \u001b[38;5;51m${'$'}\u001b[0m "
+        }
+        args += listOf(
             "/bin/sh", "-l",
         )
         return ShellLaunch(
@@ -93,6 +98,14 @@ class RuntimeController(private val context: Context) {
             label = "proot",
         )
     }
+
+    /** Magenta path, cyan dollar, like the neon prompt in the design. */
+    private fun promptEnv(settings: RuntimeSettings): Map<String, String> =
+        if (settings.promptAccent) {
+            mapOf("PS1" to "\u001b[38;5;201m\\w\u001b[0m \u001b[38;5;51m${'$'}\u001b[0m ")
+        } else {
+            emptyMap()
+        }
 
     /** Rootfs paths used by file tools and stdio MCP servers. */
     fun workspaceRoot(settings: RuntimeSettings): File =

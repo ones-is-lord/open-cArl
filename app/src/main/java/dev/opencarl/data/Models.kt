@@ -33,6 +33,7 @@ data class RuntimeSettings(
     val distro: String = "alpine",
     val prootArgs: String = "",
     val termuxBridgeEnabled: Boolean = false,
+    val promptAccent: Boolean = true,
 )
 
 @Serializable

@@ -52,6 +52,16 @@ gradle :app:testDebugUnitTest
 - `snapshotBeforeRisky` snapshots in `requestApproval` before the dialog, so the
   undo point exists even if the user says yes to something stupid.
 
+## Typography
+
+- Display type is Oxanium (bundled variable TTF, wght 200-800). Always load it
+  through `FontLibrary.oxanium` or the `oxanium_display`/`oxanium_bold` families;
+  loading `R.font.oxanium_var` directly gives weight 200.
+- Neon chrome lives in `NeonType.kt` (Compose) and `NeonSpec.kt` (pure maths,
+  unit tested). Terminal text must never use either.
+- Compose has no `skewX` on `graphicsLayer`; the CSS slant is approximated with
+  `FontStyle.Italic`.
+
 ## Gotchas
 
 - In Kotlin string literals `\s` is not a valid escape — use `\\s` or raw strings.

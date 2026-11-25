@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import dev.opencarl.app.OpenCarlViewModel
 import dev.opencarl.appearance.ColorRole
 import dev.opencarl.appearance.FontLibrary
+import dev.opencarl.appearance.NeonWordmark
 import dev.opencarl.ui.components.CarlHeader
 import kotlinx.coroutines.launch
 
@@ -92,13 +93,12 @@ fun OpenCarlApp(vm: OpenCarlViewModel) {
             drawerContent = {
                 ModalDrawerSheet(drawerContainerColor = MaterialTheme.colorScheme.surface) {
                     Column(Modifier.verticalScroll(rememberScrollState())) {
-                        Text(
-                            appearance.bannerLabel,
-                            fontFamily = FontLibrary.familyOf(appearance.bannerFont),
-                            color = appearance.colorOf(ColorRole.BANNER),
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(16.dp),
+                        NeonWordmark(
+                            text = appearance.bannerLabel,
+                            appearance = appearance,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                            maxSp = 46f,
+                            minSp = 18f,
                         )
                         Text(
                             runtimeLabel + " · " + settings.activeProvider.name,

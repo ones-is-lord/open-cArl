@@ -134,8 +134,41 @@ tools/device-smoke.sh              # installs, loads the terminal, fails on cras
 9.6 MB/s on the JVM), churns the alternate screen 500 times, resizes 300 times,
 and hammers the buffer from four writer threads plus a reader.
 
+## Neon typography
+
+The display type comes from `open_carl_neon_type.css`, rebuilt natively in
+Compose (`appearance/NeonSpec.kt` for the maths, `appearance/NeonType.kt` for the
+drawing). Oxanium is bundled, not fetched: `res/font/oxanium_var.ttf` is the
+variable font (wght 200-800, OFL, licence in `assets/fonts/OFL.txt`) pinned to
+800 for the wordmark and 700 for the banner by the `oxanium_display` and
+`oxanium_bold` font families. Nothing here needs a network at first launch.
+
+| CSS | Compose |
+|---|---|
+| `font-family: Oxanium; font-weight: 800` | `FontLibrary.oxanium` (variable axis pinned to 800) |
+| `text-transform: uppercase` | `NeonSpec.display()` |
+| `letter-spacing: -0.055em` | `letterSpacing = (-0.045).em` on the wordmark |
+| `font-style: italic` / `skewX(-4deg)` | `FontStyle.Italic`; Compose's layer API has no skew, so the platform oblique is used and can be switched off |
+| `background: linear-gradient(100deg, 9 stops)` + `background-size: 220%` | `Brush.linearGradient` over a 2.2x span, shifted by an animated phase |
+| `-webkit-text-stroke: 1.5px` + `paint-order: stroke fill` | a `Stroke`-styled text layer drawn under the fill |
+| three `drop-shadow` bloom layers | pink, cyan and white text layers with `Modifier.blur`, scaled 1.03x for a rim on pre-API-31 devices |
+| `animation: oc-rainbow-drift 12s` | phase driven at 20 Hz from `NeonSpec.phaseAt` |
+| `prefers-reduced-motion` | disabled when `ANIMATOR_DURATION_SCALE == 0` or the in-app toggle is off |
+| `.oc-banner-text` (cyan, 700, uppercase) | `NeonBannerText` in the header, user text, size, case and visibility preserved |
+| `.oc-terminal` (off-white mono) | terminal foreground `#E8F7FF`, no gradients, monospace untouched |
+| prompt accent | `PS1` sets magenta path and cyan `$` for both device and proot shells |
+
+Sizing: every size is in `sp`, so Android font scaling applies. The wordmark and
+banner measure their text once and shrink to fit their width instead of clipping
+or scrolling horizontally; the banner wraps to two lines and ellipsises beyond
+that.
+
 ## Honest limits
 
+- The neon typography has not been eyeballed on a device either: it compiles, the
+  font is packaged, and the colour maths is unit tested, but glow strength and
+  gradient speed want a real screen. The Appearance screen toggles exist partly
+  so you can dial it down without a rebuild.
 - Still not run on a physical device: 34 unit tests pass and the parser survives
   4 MB bursts, but the PTY, the Compose renderer and the accessibility paths need
   a real phone. `tools/device-smoke.sh` is the script to prove it; it has not

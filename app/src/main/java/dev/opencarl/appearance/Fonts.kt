@@ -19,7 +19,12 @@ data class FontEntry(
  */
 object FontLibrary {
 
+    /** Oxanium at weight 800, the display face for the neon wordmark. */
+    val oxanium: FontFamily = FontFamily(Font(R.font.oxanium_display))
+
     val bundled: List<FontEntry> = listOf(
+        FontEntry("oxanium", "Oxanium (display)", R.font.oxanium_display, cssName = "Oxanium", monospace = false),
+        FontEntry("oxanium_bold", "Oxanium Bold", R.font.oxanium_bold, cssName = "Oxanium", monospace = false),
         FontEntry("jetbrains_mono", "JetBrains Mono", R.font.jetbrains_mono, cssName = "JetBrains Mono"),
         FontEntry("fira_code", "Fira Code", R.font.fira_code, cssName = "Fira Code"),
         FontEntry("ibm_plex_mono", "IBM Plex Mono", R.font.ibm_plex_mono, cssName = "IBM Plex Mono"),

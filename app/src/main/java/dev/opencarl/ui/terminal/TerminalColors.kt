@@ -51,7 +51,11 @@ class TerminalColors(
     companion object {
         fun from(appearance: AppearanceSettings): TerminalColors {
             val background = appearance.colorOf(ColorRole.TERMINAL_BACKGROUND)
-            val foreground = appearance.colorOf(ColorRole.TEXT)
+            val foreground = if (appearance.terminalOffWhite) {
+                androidx.compose.ui.graphics.Color(0xFFE8F7FF)
+            } else {
+                appearance.colorOf(ColorRole.TEXT)
+            }
             val cursor = appearance.colorOf(ColorRole.CURSOR)
             val accent = appearance.colorOf(ColorRole.ACCENT)
             val highlight = appearance.colorOf(ColorRole.HIGHLIGHT)

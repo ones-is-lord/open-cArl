@@ -1,0 +1,123 @@
+/* OPEN CARL — Neon Rainbow Display Typography
+   Use for branding, splash headings and the persistent banner title.
+   Keep terminal output in a separate monospace font for legibility.
+*/
+
+/* Optional hosted font. For offline/reliable Android builds, bundle Oxanium
+   WOFF2 files in app assets and replace this import with @font-face rules. */
+@import url('https://fonts.googleapis.com/css2?family=Oxanium:wght@600;700;800&display=swap');
+
+:root {
+  --oc-black: #05030a;
+  --oc-pink: #ff18c8;
+  --oc-red: #ff3b55;
+  --oc-orange: #ff8a16;
+  --oc-yellow: #fff12e;
+  --oc-green: #57ff58;
+  --oc-cyan: #18f4ff;
+  --oc-blue: #3978ff;
+  --oc-violet: #a64dff;
+}
+
+/* Main OPEN CARL wordmark / large GUI heading */
+.oc-neon-type {
+  display: inline-block;
+  max-width: 100%;
+  font-family: "Oxanium", "Arial Black", system-ui, sans-serif;
+  font-size: clamp(2rem, 7vw, 5.5rem);
+  font-weight: 800;
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+  text-transform: uppercase;
+  font-style: italic;
+  transform: skewX(-4deg);
+
+  /* Rainbow fill */
+  background: linear-gradient(
+    100deg,
+    var(--oc-pink) 0%,
+    var(--oc-red) 14%,
+    var(--oc-orange) 27%,
+    var(--oc-yellow) 39%,
+    var(--oc-green) 52%,
+    var(--oc-cyan) 65%,
+    var(--oc-blue) 78%,
+    var(--oc-violet) 90%,
+    var(--oc-pink) 100%
+  );
+  background-size: 220% 100%;
+  background-position: 0% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+
+  /* Dark cutout edge + layered neon bloom */
+  -webkit-text-stroke: 1.5px rgba(5, 3, 10, 0.95);
+  paint-order: stroke fill;
+  filter:
+    drop-shadow(0 0 2px rgba(255,255,255,.95))
+    drop-shadow(0 0 7px rgba(255,24,200,.9))
+    drop-shadow(0 0 15px rgba(24,244,255,.7));
+  animation: oc-rainbow-drift 12s linear infinite;
+}
+
+/* Smaller persistent custom-text banner */
+.oc-banner-text {
+  font-family: "Oxanium", "Arial Black", system-ui, sans-serif;
+  font-size: clamp(0.95rem, 2.2vw, 1.55rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+  color: var(--oc-cyan);
+  text-shadow:
+    0 0 3px #fff,
+    0 0 8px var(--oc-cyan),
+    0 0 18px rgba(24,244,255,.75);
+  overflow-wrap: anywhere;
+}
+
+/* Optional short labels / command-category accents */
+.oc-neon-label {
+  font-family: "Oxanium", system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--oc-yellow);
+  text-shadow:
+    0 0 3px #fff,
+    0 0 8px var(--oc-orange),
+    0 0 16px rgba(255,138,22,.8);
+}
+
+/* Keep CLI content calm and crisp; neon is for the chrome, not every line. */
+.oc-terminal,
+.oc-terminal pre,
+.oc-terminal code {
+  font-family: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: #e8f7ff;
+  text-shadow: 0 0 5px rgba(24,244,255,.22);
+}
+
+@keyframes oc-rainbow-drift {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 220% 50%; }
+}
+
+/* Respect accessibility preferences and reduce motion. */
+@media (prefers-reduced-motion: reduce) {
+  .oc-neon-type { animation: none; }
+}
+
+/* Small-screen adjustment: avoid oversized logo text pushing the CLI down. */
+@media (max-width: 420px) {
+  .oc-neon-type {
+    font-size: clamp(1.65rem, 10vw, 2.6rem);
+    letter-spacing: -0.06em;
+  }
+  .oc-terminal, .oc-terminal pre, .oc-terminal code {
+    font-size: 0.875rem;
+  }
+}

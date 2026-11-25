@@ -33,6 +33,8 @@ import dev.opencarl.appearance.FontLibrary
 import dev.opencarl.appearance.Palette32
 import dev.opencarl.ui.components.ColorSwatch
 import dev.opencarl.ui.components.ScreenScaffold
+import androidx.compose.material3.Switch
+import dev.opencarl.appearance.NeonWordmark
 import dev.opencarl.ui.components.SectionTitle
 
 @Composable
@@ -45,6 +47,28 @@ fun AppearanceScreen(container: AppContainer, appearance: AppearanceSettings, on
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             SectionTitle("banner")
+            NeonWordmark(
+                text = appearance.bannerLabel,
+                appearance = appearance,
+                modifier = Modifier.fillMaxWidth(),
+                maxSp = 44f,
+                minSp = 16f,
+            )
+            ToggleRow("Show banner", appearance.bannerVisible) { on ->
+                container.settings.updateAppearance { it.copy(bannerVisible = on) }
+            }
+            ToggleRow("Uppercase banner", appearance.bannerUppercase) { on ->
+                container.settings.updateAppearance { it.copy(bannerUppercase = on) }
+            }
+            Text("Banner size: ${appearance.bannerSizeSp}sp", fontSize = 12.sp)
+            Slider(
+                value = appearance.bannerSizeSp.toFloat(),
+                onValueChange = { value ->
+                    container.settings.updateAppearance { it.copy(bannerSizeSp = value.toInt()) }
+                },
+                valueRange = 11f..30f,
+                steps = 18,
+            )
             OutlinedTextField(
                 value = appearance.bannerText,
                 onValueChange = { text -> container.settings.updateAppearance { it.copy(bannerText = text) } },
@@ -53,6 +77,28 @@ fun AppearanceScreen(container: AppContainer, appearance: AppearanceSettings, on
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
                 modifier = Modifier.fillMaxWidth(),
+            )
+
+            SectionTitle("neon type")
+            ToggleRow("Animated rainbow", appearance.neonAnimation) { on ->
+                container.settings.updateAppearance { it.copy(neonAnimation = on) }
+            }
+            ToggleRow("Italic slant", appearance.neonItalic) { on ->
+                container.settings.updateAppearance { it.copy(neonItalic = on) }
+            }
+            ToggleRow("Off-white terminal output", appearance.terminalOffWhite) { on ->
+                container.settings.updateAppearance { it.copy(terminalOffWhite = on) }
+            }
+            ToggleRow("Magenta shell prompt", appearance.promptAccent) { on ->
+                container.settings.updateAppearance { it.copy(promptAccent = on) }
+                container.settings.update { current ->
+                    current.copy(runtime = current.runtime.copy(promptAccent = on))
+                }
+                container.restartSession()
+            }
+            Text(
+                "Motion is also disabled when the system animation scale is 0.",
+                fontSize = 9.sp,
             )
 
             SectionTitle("fonts")
@@ -168,5 +214,17 @@ private fun ColorRoleRow(role: ColorRole, current: String, onPick: (String) -> U
                 ColorSwatch(color, selected = color.id == current, onClick = { onPick(color.id) })
             }
         }
+    }
+}
+
+@Composable
+private fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(label, fontSize = 12.sp)
+        Switch(checked = checked, onCheckedChange = onChange)
     }
 }

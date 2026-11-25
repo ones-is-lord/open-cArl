@@ -32,6 +32,13 @@ data class AppearanceSettings(
     val bannerFont: String = "press_start_2p",
     val headerFont: String = "jetbrains_mono",
     val terminalFontSize: Int = 14,
+    val neonAnimation: Boolean = true,
+    val neonItalic: Boolean = true,
+    val bannerVisible: Boolean = true,
+    val bannerUppercase: Boolean = true,
+    val bannerSizeSp: Int = 17,
+    val terminalOffWhite: Boolean = true,
+    val promptAccent: Boolean = true,
 ) {
 
     fun colorOf(role: ColorRole): Color = Palette32.colorOf(

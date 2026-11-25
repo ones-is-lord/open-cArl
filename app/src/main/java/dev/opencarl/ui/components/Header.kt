@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import dev.opencarl.appearance.AppearanceSettings
 import dev.opencarl.appearance.ColorRole
 import dev.opencarl.appearance.FontLibrary
+import dev.opencarl.appearance.NeonBannerText
 
 /**
  * Static header: present on every screen, banner text and all chrome colors
@@ -66,15 +67,14 @@ fun CarlHeader(
                 Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = appearance.colorOf(ColorRole.ACCENT))
             }
             Column(Modifier.weight(1f)) {
-                Text(
-                    text = appearance.bannerLabel,
-                    fontFamily = bannerFont,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = appearance.colorOf(ColorRole.BANNER),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (appearance.bannerVisible) {
+                    NeonBannerText(
+                        text = appearance.bannerLabel,
+                        appearance = appearance,
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 1,
+                    )
+                }
                 Text(
                     text = subtitle,
                     fontFamily = FontLibrary.familyOf(appearance.headerFont),
