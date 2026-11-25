@@ -9,11 +9,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Brush
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Extension
@@ -66,6 +68,7 @@ private enum class Route(val label: String, val icon: ImageVector) {
     DGAF("D.G.A.F.", Icons.Filled.Warning),
     PERSONAS("Personas", Icons.Filled.Psychology),
     SNAPSHOTS("Snapshots", Icons.Filled.Refresh),
+    DIAGNOSTICS("Diagnostics", Icons.Filled.BugReport),
 }
 
 @Composable
@@ -176,7 +179,7 @@ fun OpenCarlApp(vm: OpenCarlViewModel) {
                         Text("revoke", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                     }
                 }
-                Box(Modifier.weight(1f).fillMaxWidth()) {
+                Box(Modifier.weight(1f).fillMaxWidth().imePadding()) {
                     TerminalPane(
                         container = vm.container,
                         appearance = appearance,
@@ -214,6 +217,7 @@ fun OpenCarlApp(vm: OpenCarlViewModel) {
                 Route.DGAF -> DgafScreen(vm.container, appearance) { route = null }
                 Route.PERSONAS -> PersonasScreen(vm.container, appearance) { route = null }
                 Route.SNAPSHOTS -> SnapshotsScreen(vm.container, appearance) { route = null }
+                Route.DIAGNOSTICS -> DiagnosticsScreen(vm.container, appearance) { route = null }
             }
         }
     }
